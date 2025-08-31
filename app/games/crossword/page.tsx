@@ -31,7 +31,7 @@ export default async function CrosswordPage() {
   }
 
   return (
-    <main className="h-screen bg-black text-white">
+    <main className="h-dvh bg-black text-white">
       <Crossword puzzle={puzzle} />
     </main>
   );

@@ -28,7 +28,7 @@ export default function Keyboard({ onKeyPress, onBackspace }: KeyboardProps) {
             <button
               key={key}
               onClick={() => handleKeyClick(key)}
-              className="h-10 flex-1 bg-neutral-600 hover:bg-neutral-500 rounded-md text-white font-semibold uppercase flex items-center justify-center"
+              className="h-14 flex-1 bg-neutral-600 hover:bg-neutral-500 rounded-md text-white font-semibold uppercase flex items-center justify-center"
             >
               {key === 'BACKSPACE' ? (
                 <svg

@@ -338,7 +338,7 @@ export default function Crossword({ puzzle }: CrosswordProps) {
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto h-full flex flex-col p-1">
+    <div className="w-full max-w-lg mx-auto h-full flex flex-col justify-center p-2">
       <Toolbar
         onCheck={handleCheck}
         onReveal={handleReveal}
