@@ -1,33 +1,16 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Puzzle, Direction, Cell, CellStatus } from '@/types';
-import CrosswordGrid from '@/components/crossword/CrosswordGrid';
-import ClueBar from '@/components/crossword/ClueBar';
-import Keyboard from '@/components/crossword/Keyboard';
-import Toolbar from '@/components/crossword/Toolbar';
-import CompletionModal from '@/components/crossword/CompletionModal';
+import { Puzzle, Direction, Cell, CellStatus } from '../../types';
+import CrosswordGrid from './CrosswordGrid';
+import ClueBar from './ClueBar';
+import Keyboard from './Keyboard';
+import Toolbar from './Toolbar';
+import CompletionModal from './CompletionModal';
 
-// Helper to check if a cell is part of a word in a given direction
-const hasWord = (
-  puzzle: Puzzle,
-  row: number,
-  col: number,
-  direction: Direction
-): boolean => {
-  if (direction === 'across') {
-    const leftCell = col > 0 ? puzzle.solution[row][col - 1] : ' ';
-    const rightCell =
-      col < puzzle.size - 1 ? puzzle.solution[row][col + 1] : ' ';
-    return leftCell !== ' ' || rightCell !== ' ';
-  } else {
-    // down
-    const topCell = row > 0 ? puzzle.solution[row - 1][col] : ' ';
-    const bottomCell =
-      row < puzzle.size - 1 ? puzzle.solution[row + 1][col] : ' ';
-    return topCell !== ' ' || bottomCell !== ' ';
-  }
-};
+interface CrosswordProps {
+  puzzle: Puzzle;
+}
 
 const createEmptyGrid = (size: number): string[][] =>
   Array(size)
@@ -46,12 +29,8 @@ const findFirstCell = (puzzle: Puzzle): Cell => {
       }
     }
   }
-  return { row: 0, col: 0 }; // Fallback
+  return { row: 0, col: 0 };
 };
-
-interface CrosswordProps {
-  puzzle: Puzzle;
-}
 
 export default function Crossword({ puzzle }: CrosswordProps) {
   const [grid, setGrid] = useState<string[][]>(() =>
@@ -70,15 +49,14 @@ export default function Crossword({ puzzle }: CrosswordProps) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [hasShownIncorrectModal, setHasShownIncorrectModal] = useState(false);
-  const [pauseTime, setPauseTime] = useState<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTickTimeRef = useRef<number | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
 
-  // Load state from localStorage
+  // Load saved state
   useEffect(() => {
     const savedGrid = localStorage.getItem(`crossword-${puzzle.id}`);
     if (savedGrid) setGrid(JSON.parse(savedGrid));
-
     const savedStartTime = localStorage.getItem(
       `crossword-startTime-${puzzle.id}`
     );
@@ -91,7 +69,7 @@ export default function Crossword({ puzzle }: CrosswordProps) {
     }
   }, [puzzle.id]);
 
-  // Save grid to localStorage
+  // Save grid state
   useEffect(() => {
     localStorage.setItem(`crossword-${puzzle.id}`, JSON.stringify(grid));
   }, [grid, puzzle.id]);
@@ -99,6 +77,7 @@ export default function Crossword({ puzzle }: CrosswordProps) {
   // Timer logic
   useEffect(() => {
     if (isTimerRunning && startTime) {
+      lastTickTimeRef.current = Date.now();
       timerRef.current = setInterval(() => {
         setElapsedTime(Date.now() - startTime);
       }, 1000);
@@ -110,38 +89,27 @@ export default function Crossword({ puzzle }: CrosswordProps) {
     };
   }, [isTimerRunning, startTime]);
 
-  // Pause timer when tab is inactive
+  // Pause/Resume timer on tab visibility change
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        if (isTimerRunning) {
-          setIsTimerRunning(false);
-          setPauseTime(Date.now());
-        }
+        setIsTimerRunning(false);
       } else {
-        if (pauseTime && startTime) {
-          const newStartTime = startTime + (Date.now() - pauseTime);
-          setStartTime(newStartTime);
-          localStorage.setItem(
-            `crossword-startTime-${puzzle.id}`,
-            newStartTime.toString()
-          );
+        if (startTime && !finalTime) {
+          if (lastTickTimeRef.current) {
+            const pausedDuration = Date.now() - lastTickTimeRef.current;
+            setStartTime((prev) => (prev ? prev + pausedDuration : null));
+          }
           setIsTimerRunning(true);
-          setPauseTime(null);
         }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () =>
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isTimerRunning, pauseTime, startTime, puzzle.id]);
+  }, [startTime, finalTime]);
 
-  // Focus input on activeCell change
-  useEffect(() => {
-    inputRefs.current[activeCell.row]?.[activeCell.col]?.focus();
-  }, [activeCell]);
-
-  // Check for puzzle completion
+  // Check for completion
   const checkCompletion = useCallback(() => {
     if (!startTime) return;
     const isGridFull = grid.every((row, rIndex) =>
@@ -173,7 +141,11 @@ export default function Crossword({ puzzle }: CrosswordProps) {
     checkCompletion();
   }, [grid, checkCompletion]);
 
-  // --- EVENT HANDLERS ---
+  // Focus input
+  useEffect(() => {
+    inputRefs.current[activeCell.row]?.[activeCell.col]?.focus();
+  }, [activeCell]);
+
   const handleFirstInput = () => {
     if (!startTime) {
       const now = Date.now();
@@ -181,23 +153,6 @@ export default function Crossword({ puzzle }: CrosswordProps) {
       setIsTimerRunning(true);
       localStorage.setItem(`crossword-startTime-${puzzle.id}`, now.toString());
     }
-  };
-
-  const handleCellClick = (row: number, col: number) => {
-    const hasAcross = hasWord(puzzle, row, col, 'across');
-    const hasDown = hasWord(puzzle, row, col, 'down');
-
-    if (activeCell.row === row && activeCell.col === col) {
-      // FIX: Improved direction toggling
-      if (direction === 'across' && hasDown) setDirection('down');
-      else if (direction === 'down' && hasAcross) setDirection('across');
-    } else {
-      // FIX: Intelligently set initial direction
-      if (hasAcross) setDirection('across');
-      else if (hasDown) setDirection('down');
-    }
-    setActiveCell({ row, col });
-    setCellStatus(createInitialStatus(puzzle.size));
   };
 
   const moveToNextCell = (row: number, col: number) => {
@@ -212,6 +167,18 @@ export default function Crossword({ puzzle }: CrosswordProps) {
         nextRow++;
       if (nextRow < puzzle.size) setActiveCell({ row: nextRow, col });
     }
+  };
+
+  const handleCellClick = (row: number, col: number) => {
+    const newDirection =
+      activeCell.row === row && activeCell.col === col
+        ? direction === 'across'
+          ? 'down'
+          : 'across'
+        : direction;
+    setDirection(newDirection);
+    setActiveCell({ row, col });
+    setCellStatus(createInitialStatus(puzzle.size));
   };
 
   const handleInputChange = (
@@ -232,14 +199,17 @@ export default function Crossword({ puzzle }: CrosswordProps) {
     handleFirstInput();
     const { row, col } = activeCell;
     const newGrid = grid.map((r) => [...r]);
-    if (key === 'BACKSPACE') {
-      newGrid[row][col] = '';
-      setGrid(newGrid);
-    } else {
-      newGrid[row][col] = key.toUpperCase();
-      setGrid(newGrid);
-      moveToNextCell(row, col);
-    }
+    newGrid[row][col] = key.toUpperCase();
+    setGrid(newGrid);
+    moveToNextCell(row, col);
+    setCellStatus(createInitialStatus(puzzle.size));
+  };
+
+  const handleBackspace = () => {
+    const { row, col } = activeCell;
+    const newGrid = grid.map((r) => [...r]);
+    newGrid[row][col] = '';
+    setGrid(newGrid);
     setCellStatus(createInitialStatus(puzzle.size));
   };
 
@@ -347,31 +317,35 @@ export default function Crossword({ puzzle }: CrosswordProps) {
       .toString()
       .padStart(2, '0')}`;
     const date = new Date().toLocaleDateString('en-US');
-    const url = 'https://lilpuzzles.com';
-    const shareText = `I solved the ${date} Mini Crossword in ${timeStr}!\n\n${url}`;
-    const shareData = { text: shareText, title: 'My Mini Crossword Score' };
+    const url = 'https://lilpuzzles.com/games/crossword';
+    // Combine the message and URL into the 'text' field for better compatibility
+    const shareText = `I solved the ${date} Lil Puzzles Mini Crossword in ${timeStr}!\n\n${url}`;
 
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.error('Share failed:', err);
-        navigator.clipboard.writeText(shareText);
+    try {
+      if (navigator.share) {
+        // Use the combined text and omit the 'url' and 'title' fields
+        await navigator.share({ text: shareText });
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        alert('Score copied to clipboard!');
       }
-    } else {
-      navigator.clipboard.writeText(shareText);
+    } catch (error) {
+      console.error('Sharing failed', error);
+      // Fallback to clipboard if sharing fails
+      await navigator.clipboard.writeText(shareText);
+      alert('Sharing failed, score copied to clipboard!');
     }
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto h-full flex flex-col">
+    <div className="w-full max-w-lg mx-auto h-full flex flex-col p-1">
       <Toolbar
         onCheck={handleCheck}
         onReveal={handleReveal}
         onReset={handleReset}
         elapsedTime={elapsedTime}
       />
-      <div className="flex-grow flex items-center justify-center p-1">
+      <div className="flex-grow flex items-center justify-center w-full">
         <CrosswordGrid
           puzzle={puzzle}
           grid={grid}
@@ -384,11 +358,17 @@ export default function Crossword({ puzzle }: CrosswordProps) {
           handleKeyDown={handleKeyDown}
         />
       </div>
-      <ClueBar puzzle={puzzle} activeCell={activeCell} direction={direction} />
-      <Keyboard
-        onKeyPress={handleVirtualKeyPress}
-        onBackspace={() => handleVirtualKeyPress('BACKSPACE')}
-      />
+      <div className="w-full">
+        <ClueBar
+          puzzle={puzzle}
+          activeCell={activeCell}
+          direction={direction}
+        />
+        <Keyboard
+          onKeyPress={handleVirtualKeyPress}
+          onBackspace={handleBackspace}
+        />
+      </div>
       {isModalOpen && (
         <CompletionModal
           finalTime={finalTime}

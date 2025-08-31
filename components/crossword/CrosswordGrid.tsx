@@ -91,6 +91,7 @@ export default function CrosswordGrid({
                   inputRefs.current[rIndex][cIndex] = el;
                 }}
                 type="text"
+                readOnly
                 maxLength={1}
                 value={grid[rIndex]?.[cIndex] || ''}
                 onClick={() => handleCellClick(rIndex, cIndex)}
