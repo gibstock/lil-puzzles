@@ -3,9 +3,12 @@ import GameTile from '../components/GameTile';
 export default function Home() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-8">
-      <header className="text-center mb-12">
-        <h1 className="text-5xl font-bold mb-2">Family Game Hub</h1>
-        <p className="text-lg text-neutral-400">Choose a game to play!</p>
+      <header className="text-center mb-12  p-6 rounded-lg shadow-lg bg-neutral-50">
+        <h1 className="text-5xl font-bold mb-2 text-neutral-800">
+          <span className="text-[#5068dd]">L</span>il{' '}
+          <span className="text-[#2ecc71]">P</span>uzzles
+        </h1>
+        <p className="text-lg text-neutral-600">Choose a game to play!</p>
       </header>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <GameTile
