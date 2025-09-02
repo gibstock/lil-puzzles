@@ -79,7 +79,7 @@ export default function CrosswordGrid({
           const isIncorrect = status === 'incorrect';
 
           return (
-            <div key={`${rIndex}-${cIndex}`} className="relative">
+            <div key={`${rIndex}-${cIndex}`} className="relative bg-white">
               <span className="absolute top-0 left-1 text-[10px] text-neutral-500">
                 {puzzle.gridnums[rIndex][cIndex] || ''}
               </span>
@@ -99,7 +99,7 @@ export default function CrosswordGrid({
                 onKeyDown={(e) => handleKeyDown(e, rIndex, cIndex)}
                 className={clsx(
                   'w-full h-full text-center text-xl md:text-2xl uppercase font-bold caret-transparent',
-                  'bg-white text-black',
+                  'text-black',
                   {
                     'bg-yellow-400': isActive,
                     'bg-blue-200': isInWord,

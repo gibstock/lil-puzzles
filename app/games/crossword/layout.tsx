@@ -12,14 +12,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Layout({
+export default function CrosswordLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
+  return <section>{children}</section>;
 }
