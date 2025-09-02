@@ -1,0 +1,34 @@
+{
+  "id": "2025-09-02",
+  "size": 5,
+  "solution": [
+    [" ", "E", "B", "B", " "],
+    ["B", "R", "E", "A", "D"],
+    ["F", "A", "L", "S", "E"],
+    ["F", "S", "L", "I", "C"],
+    [" ", "E", "S", "C", " "]
+  ],
+  "gridnums": [
+    [0, 1, 2, 3, 0],
+    [4, 5, 6, 7, 8],
+    [9, 10, 11, 12, 13],
+    [14, 15, 16, 17, 18],
+    [0, 19, 20, 21, 0]
+  ],
+  "clues": {
+    "across": {
+      "1": "___ and flow",
+      "4": "Uncooked toast",
+      "9": "Not true!",
+      "14": "FDIC predecessor",
+      "17": "Keyboard's ABORT! In short"
+    },
+    "down": {
+      "1": "Get rid of",
+      "2": "LL rocked em",
+      "3": "Pumpkin spiced lattes",
+      "4": "Your personal chucky",
+      "8": "As a Sagi, you celebrate"
+    }
+  }
+}
