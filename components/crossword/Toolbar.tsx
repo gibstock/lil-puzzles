@@ -24,7 +24,7 @@ export default function Toolbar({
     <div className="flex justify-between items-center p-2 bg-neutral-800">
       <div className="text-lg font-mono w-20">{formatTime(elapsedTime)}</div>
       <div className="flex gap-4">
-        <button
+        {/* <button
           onClick={onCheck}
           title="Check Puzzle"
           className="text-white hover:text-yellow-400"
@@ -42,8 +42,8 @@ export default function Toolbar({
           >
             <path d="M20 6 9 17l-5-5" />
           </svg>
-        </button>
-        <button
+        </button> */}
+        {/* <button
           onClick={onReveal}
           title="Reveal Puzzle"
           className="text-white hover:text-yellow-400"
@@ -62,7 +62,7 @@ export default function Toolbar({
             <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
             <circle cx="12" cy="12" r="3" />
           </svg>
-        </button>
+        </button> */}
         <button
           onClick={onReset}
           title="Reset Puzzle"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Puzzle, Direction, Cell, CellStatus } from '../../types';
 import CrosswordGrid from './CrosswordGrid';
 import ClueBar from './ClueBar';
@@ -53,18 +53,67 @@ export default function Crossword({ puzzle }: CrosswordProps) {
   const lastTickTimeRef = useRef<number | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
 
+  // Pre-process and sort all clues to determine the puzzle's flow
+  const sortedClues = useMemo(() => {
+    const clues: { num: number; cell: Cell; direction: Direction }[] = [];
+    const seen = new Set<number>();
+
+    // Iterate through grid to find clue numbers and their positions
+    for (let r = 0; r < puzzle.size; r++) {
+      for (let c = 0; c < puzzle.size; c++) {
+        const num = puzzle.gridnums[r][c];
+        if (num > 0 && !seen.has(num)) {
+          seen.add(num);
+          const isAcross = !!puzzle.clues.across[num];
+          const isDown = !!puzzle.clues.down[num];
+
+          if (isAcross) {
+            clues.push({ num, cell: { row: r, col: c }, direction: 'across' });
+          }
+          if (isDown) {
+            clues.push({ num, cell: { row: r, col: c }, direction: 'down' });
+          }
+        }
+      }
+    }
+
+    // Sort primarily by number, secondarily by direction (across first)
+    clues.sort((a, b) => {
+      if (a.num !== b.num) return a.num - b.num;
+      return a.direction === 'across' ? -1 : 1;
+    });
+
+    return clues;
+  }, [puzzle]);
+
   // Load saved state
   useEffect(() => {
     const savedGrid = localStorage.getItem(`crossword-${puzzle.id}`);
     if (savedGrid) setGrid(JSON.parse(savedGrid));
-    const savedStartTime = localStorage.getItem(
-      `crossword-startTime-${puzzle.id}`
+
+    // Check for saved elapsed time first for session restoration
+    const savedElapsedTime = localStorage.getItem(
+      `crossword-elapsedTime-${puzzle.id}`
     );
-    if (savedStartTime) {
-      const parsedStartTime = parseInt(savedStartTime, 10);
-      if (!isNaN(parsedStartTime)) {
-        setStartTime(parsedStartTime);
+    if (savedElapsedTime) {
+      const parsedElapsedTime = parseInt(savedElapsedTime, 10);
+      if (!isNaN(parsedElapsedTime)) {
+        setElapsedTime(parsedElapsedTime);
+        // Reconstruct the start time to resume counting accurately
+        setStartTime(Date.now() - parsedElapsedTime);
         setIsTimerRunning(true);
+      }
+    } else {
+      // Fallback for older saved states or new games
+      const savedStartTime = localStorage.getItem(
+        `crossword-startTime-${puzzle.id}`
+      );
+      if (savedStartTime) {
+        const parsedStartTime = parseInt(savedStartTime, 10);
+        if (!isNaN(parsedStartTime)) {
+          setStartTime(parsedStartTime);
+          setIsTimerRunning(true);
+        }
       }
     }
   }, [puzzle.id]);
@@ -74,10 +123,23 @@ export default function Crossword({ puzzle }: CrosswordProps) {
     localStorage.setItem(`crossword-${puzzle.id}`, JSON.stringify(grid));
   }, [grid, puzzle.id]);
 
+  // Save elapsed time right before the tab closes
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isTimerRunning) {
+        localStorage.setItem(
+          `crossword-elapsedTime-${puzzle.id}`,
+          elapsedTime.toString()
+        );
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [elapsedTime, isTimerRunning, puzzle.id]);
+
   // Timer logic
   useEffect(() => {
     if (isTimerRunning && startTime) {
-      lastTickTimeRef.current = Date.now();
       timerRef.current = setInterval(() => {
         setElapsedTime(Date.now() - startTime);
       }, 1000);
@@ -94,11 +156,13 @@ export default function Crossword({ puzzle }: CrosswordProps) {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         setIsTimerRunning(false);
+        lastTickTimeRef.current = Date.now();
       } else {
         if (startTime && !finalTime) {
           if (lastTickTimeRef.current) {
             const pausedDuration = Date.now() - lastTickTimeRef.current;
             setStartTime((prev) => (prev ? prev + pausedDuration : null));
+            lastTickTimeRef.current = null;
           }
           setIsTimerRunning(true);
         }
@@ -126,8 +190,15 @@ export default function Crossword({ puzzle }: CrosswordProps) {
         )
       );
       if (isCorrect) {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+
+        const finalTimestamp = Date.now() - startTime;
+
         setIsTimerRunning(false);
-        setFinalTime(Date.now() - startTime);
+        setFinalTime(finalTimestamp);
+        setElapsedTime(finalTimestamp);
         setIsModalOpen(true);
       } else if (!hasShownIncorrectModal) {
         setFinalTime(null);
@@ -151,21 +222,45 @@ export default function Crossword({ puzzle }: CrosswordProps) {
       const now = Date.now();
       setStartTime(now);
       setIsTimerRunning(true);
-      localStorage.setItem(`crossword-startTime-${puzzle.id}`, now.toString());
     }
   };
 
   const moveToNextCell = (row: number, col: number) => {
-    if (direction === 'across') {
-      let nextCol = col + 1;
-      while (nextCol < puzzle.size && puzzle.solution[row][nextCol] === ' ')
-        nextCol++;
-      if (nextCol < puzzle.size) setActiveCell({ row, col: nextCol });
+    // Check if the current cell is the end of a word
+    const isEndOfWord =
+      direction === 'across'
+        ? col === puzzle.size - 1 || puzzle.solution[row][col + 1] === ' '
+        : row === puzzle.size - 1 || puzzle.solution[row + 1][col] === ' ';
+
+    if (isEndOfWord) {
+      // Find the start of the current word to identify its clue number
+      let r = row,
+        c = col;
+      if (direction === 'across') {
+        while (c > 0 && puzzle.solution[r][c - 1] !== ' ') c--;
+      } else {
+        while (r > 0 && puzzle.solution[r - 1][c] !== ' ') r--;
+      }
+      const currentClueNum = puzzle.gridnums[r][c];
+
+      // Find the index of the current clue in our sorted list
+      const currentIndex = sortedClues.findIndex(
+        (clue) => clue.num === currentClueNum && clue.direction === direction
+      );
+
+      if (currentIndex !== -1 && currentIndex < sortedClues.length - 1) {
+        // Move to the next clue in the sequence
+        const nextClue = sortedClues[currentIndex + 1];
+        setActiveCell(nextClue.cell);
+        setDirection(nextClue.direction);
+      }
     } else {
-      let nextRow = row + 1;
-      while (nextRow < puzzle.size && puzzle.solution[nextRow][col] === ' ')
-        nextRow++;
-      if (nextRow < puzzle.size) setActiveCell({ row: nextRow, col });
+      // move to the next cell in the same word
+      if (direction === 'across') {
+        setActiveCell({ row, col: col + 1 });
+      } else {
+        setActiveCell({ row: row + 1, col });
+      }
     }
   };
 
@@ -272,6 +367,11 @@ export default function Crossword({ puzzle }: CrosswordProps) {
   };
 
   const handleCheck = () => {
+    if (!puzzle || !puzzle.solution) {
+      console.error('Check failed: Puzzle data is not ready.');
+      return;
+    }
+
     const newStatus = createInitialStatus(puzzle.size);
     for (let r = 0; r < puzzle.size; r++) {
       for (let c = 0; c < puzzle.size; c++) {
@@ -302,6 +402,7 @@ export default function Crossword({ puzzle }: CrosswordProps) {
     setIsModalOpen(false);
     setHasShownIncorrectModal(false);
     localStorage.removeItem(`crossword-startTime-${puzzle.id}`);
+    localStorage.removeItem(`crossword-elapsedTime-${puzzle.id}`);
   };
 
   const handleCloseModal = () => {

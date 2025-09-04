@@ -1,0 +1,60 @@
+{
+  "id": "2025-09-02",
+  "size": 9,
+  "solution": [
+    ["S", "I", "S", " ", " ", "L", "S", "A", "T"],
+    ["P", "H", "O", " ", "B", "O", "W", "T", "O"],
+    ["Y", "O", "U", " ", "I", "M", "E", "A", "N"],
+    [" ", "P", "R", "E", "T", "E", "E", "N", " "],
+    [" ", " ", "C", "U", "T", "I", "T", " ", " "],
+    [" ", "U", "R", "G", "E", "N", "C", "Y", " "],
+    ["S", "T", "E", "E", "R", " ", "O", "M", "G"],
+    ["S", "W", "A", "N", "S", " ", "R", "C", "A"],
+    ["N", "O", "M", "E", " ", " ", "N", "A", "P"]
+  ],
+  "gridnums": [
+    [1, 2, 3, 0, 0, 4, 5, 6, 7],
+    [8, 0, 0, 0, 9, 0, 0, 0, 0],
+    [10, 0, 0, 0, 11, 0, 0, 0, 0],
+    [0, 12, 0, 13, 0, 0, 0, 0, 0],
+    [0, 0, 14, 0, 0, 0, 0, 0, 0],
+    [0, 15, 0, 0, 0, 0, 0, 16, 0],
+    [17, 0, 0, 0, 0, 0, 18, 0, 19],
+    [20, 0, 0, 0, 0, 0, 21, 0, 0],
+    [22, 0, 0, 0, 0, 0, 23, 0, 0]
+  ],
+  "clues": {
+    "across": {
+      "1": "family member, for short",
+      "4": "Future atty.'s exam",
+      "8": "Vietnamese soup",
+      "9": "Greet with ceremonious respect",
+      "10": "Who Uncle Sam wants, per the posters",
+      "11": "That is to say...",
+      "12": "In the sixth grade or earlier, typically",
+      "14": "Get the job done",
+      "15": "Pressing importance",
+      "17": "Guide the ride",
+      "18": "\"What?!?!,\" in a text",
+      "20": "Gracefull pond dwellers",
+      "21": "HDTV brand",
+      "22": "Alaskan gold rush city",
+      "23": "Bit of shuteye"
+    },
+    "down": {
+      "1": "What Chuck was on \"Chuck\"",
+      "2": "Breakfast restaurant chain",
+      "3": "White stuff on a burrito",
+      "4": "Chinese noodle dish",
+      "5": "Vegetable often covered with butter before eating",
+      "6": "___ impasse (stuck)",
+      "7": "Elephant's weight unit",
+      "9": "Ingredient in an old-fashioned cocktail",
+      "13": "University of Oregon locale",
+      "15": "Old CIA plane (hint: it sounds like Bono's rock band)",
+      "16": "Song spelled with arm motions",
+      "17": "Nine-digit ID",
+      "19": "Gender ___ (pay inequity problem)"
+    }
+  }
+}
